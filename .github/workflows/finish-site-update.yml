@@ -1,0 +1,146 @@
+name: Finish and validate requested website update
+on:
+  push:
+    branches: [site-refresh-20261019]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply requested content changes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, html, urllib.parse, zipfile, os
+          root=Path('.')
+          def load(name): return Path(name).read_text(encoding='utf-8')
+          def save(name, value): Path(name).write_text(value,encoding='utf-8')
+          def change(name, old, new):
+              s=load(name)
+              if old not in s: raise ValueError(f'Missing expected text in {name}: {old[:80]}')
+              save(name,s.replace(old,new))
+          for path in root.glob('*.html'):
+              s=path.read_text(encoding='utf-8')
+              if 'assets/custom.css' not in s:
+                  s=s.replace('<link rel="stylesheet" href="assets/style.css">','<link rel="stylesheet" href="assets/style.css">\n<link rel="stylesheet" href="assets/custom.css">')
+              s=re.sub(r'<p class="source-note">.*?</p>','',s,flags=re.S)
+              s=s.replace('2026年4月〜','2026年4月1日〜').replace('同年4月より現職','同年4月1日より現職')
+              s=s.replace('<dt>2026.04</dt>','<dt>2026.04.01</dt>').replace('April 2026–','April 1, 2026–')
+              s=s.replace('更新日：2026.10.18','更新日：2026.10.19').replace('Updated：2026.10.18','Updated：2026.10.19')
+              for anchor,page in [('pathology','research-pathology.html'),('education','research-education.html'),('medical-dx','research-medical-dx.html'),('data-science','research-data-science.html')]:
+                  s=s.replace('href="research.html#'+anchor+'"','href="'+page+'"')
+              path.write_text(s,encoding='utf-8')
+          change('profile.html','「—」は旧サイトの内訳に記載のない項目です。','「—」は講義記録の内訳に記載のない項目です。')
+          change('index.html','<dl class="news-list">','<dl class="news-list"><div><dt>2026</dt><dd><a href="publications.html#awards">日本メディカルAI学会奨励賞（JMAI AWARD）優秀ポスター演題賞を受賞しました。</a></dd></div>')
+          award='''<section aria-labelledby="awards"><h2 id="awards">受賞</h2><article class="award-card"><p class="award-kicker">2026 · 日本メディカルAI学会</p><p>日本メディカルAI学会奨励賞（JMAI AWARD）</p><h3>優秀ポスター演題賞</h3><p><a href="#llm-bias-2026">プロンプトに含まれるバイアスの強度は医療AIの推論をどの程度歪めるか</a></p><p class="authors">演題著者：川埜 友維, <strong>宮澤 優介</strong></p><p class="role-note">宮澤の担当：研究責任者（研究企画・解析指導・発表指導）</p></article></section>'''
+          new_talks='''<article class="publication presentation" id="pdac-mtap-2026"><p class="presentation-date">2026年 <span class="format-label">ポスター・筆頭演者</span></p><h4>MTAP発現の腫瘍内不均一性を認めた膵癌肺転移の一例</h4><p class="publication-meta">第72回日本病理学会 秋期特別総会 2026</p><p class="role-note">筆頭演者：宮澤 優介</p><p class="work-summary"><strong>概要</strong>膵癌肺転移と原発性肺腺癌の鑑別を題材に、原発巣と肺病変の形態所見・免疫染色を比較した症例報告です。MTAP発現の腫瘍内不均一性に着目し、検体の評価範囲や原発巣の再検討が鑑別診断に与える影響を考察します。</p></article><article class="publication presentation" id="exam-structure-2026"><p class="presentation-date">2026年 <span class="format-label">ポスター・筆頭演者</span></p><h4>医師国家試験臨床問題のテキスト解析による出題構造の可視化</h4><p class="publication-meta">第58回日本医学教育学会大会 2026</p><p class="role-note">筆頭演者：宮澤 優介</p><p class="work-summary"><strong>概要</strong>医師国家試験の臨床問題をテキスト解析し、問題文に含まれる情報と問い方を整理することで出題構造を可視化する研究です。個々の知識項目だけでなく、問題がどのように構成されているかという観点から試験問題を分析します。</p></article>'''
+          summaries=[
+              ('social-network-2024','タイ農村部の地域在住高齢者を対象に、社会的ネットワークと身体機能との関連を検討した横断研究です。社会的つながりの評価と身体機能測定を組み合わせ、高齢者の生活を捉える指標間の関係を分析しています。'),
+              ('delirium-2024','COVID-19患者の看護記録に自然言語処理と機械学習を適用し、せん妄の発症に関連する因子を探索した研究です。日常診療で蓄積される記述情報を、臨床上のリスク評価に活用する方法を検討しています。'),
+              ('dialysis-qol-2022','透析患者と医師へのアンケートを通じて、QoLの維持・向上のために重視されるアウトカムを調査した研究です。患者と医師が重要と考える項目の共通点や違いを検討しています。'),
+              ('llm-bias-2026','プロンプトに含まれるバイアスの強さが医療AIの回答・推論に与える影響を検討した研究です。入力される誘導的な情報と回答の変化との関係に着目し、医療領域でのLLMの評価を考察します。'),
+              ('ham-wearable-2025','HAMの評価指標として、ウェアラブルデバイスで測定する日常生活の歩数に着目した研究です。診察時の評価に加え、普段の生活で得られる活動量を状態把握に活用する可能性を検討しています。'),
+              ('needlestick-2025','ペン型注入器の針による針刺し損傷を対象に、その特徴を検討した研究です。器材の種類に着目して損傷を捉え、医療従事者の安全対策を考えるための知見を整理します。'),
+              ('graph-exam-2025','良質な試験問題の自動作成を目的に、グラフ理論を用いたアルゴリズムを検討した研究です。試験問題の作成過程を形式化し、問題の構成を計算可能な形で扱う方法に取り組んでいます。'),
+              ('irt-national-2025','2010〜2023年の医師国家試験に関する大規模データを用い、項目反応理論によって問題の特性を分析した研究です。正答率だけでなく、受験者の能力と問題の特性の関係から試験問題を捉えます。'),
+              ('irt-small-2025','医学教育における少人数の受験者集団に対して、項目反応理論を適用できるかを検討した研究です。小規模な集団での推定精度に着目し、能力評価や試験分析に用いる際の条件を考察します。'),
+              ('knowledge-graph-2025','解釈可能な医療AIの開発に向けて、知識グラフを用いたデータ構造化の方法を提案した研究です。医療情報を構造として表現し、情報の関係を明示的に扱う方法を検討しています。'),
+              ('pregnancy-liver-2024','妊娠中に多発肝細胞癌が疑われた症例の報告です。妊娠という臨床背景の下での肝病変の評価を題材に、症例から得られる診断上の論点を検討します。')]
+          s=load('publications.html')
+          articles=re.findall(r'<article class="publication(?: presentation)?">.*?</article>',s,flags=re.S)
+          assert len(articles)==len(summaries),(len(articles),len(summaries))
+          for article,(ident,summary) in zip(articles,summaries):
+              edited=article.replace('>',' id="'+ident+'">',1)
+              if ident=='llm-bias-2026':
+                  edited=edited.replace('</article>','<p class="award-badge">JMAI AWARD · 優秀ポスター演題賞</p></article>')
+              edited=edited.replace('</article>','<p class="work-summary"><strong>概要</strong>'+summary+'</p></article>')
+              s=s.replace(article,edited,1)
+          s=s.replace('<section aria-labelledby="papers">',award+'<section aria-labelledby="papers">',1)
+          s=s.replace('<h3 class="year-heading" id="talks-2026">2026年</h3>','<h3 class="year-heading" id="talks-2026">2026年</h3>'+new_talks,1)
+          s=s.replace('論文と学会発表を掲載しています。','論文・学会発表の概要と受賞歴を掲載しています。')
+          s=s.replace('<nav><a href="#papers">','<nav><a href="#awards">受賞</a><a href="#papers">')
+          save('publications.html',s)
+          map_query='聖マリアンナ医科大学 神奈川県川崎市宮前区菅生2丁目16-1'
+          map_url='https://www.google.com/maps?'+urllib.parse.urlencode({'q':map_query,'output':'embed'})
+          map_link='https://www.google.com/maps/search/?api=1&query='+urllib.parse.quote(map_query)
+          links=[('researchmap','https://researchmap.jp/miyazawa-yu'),('ORCID','https://orcid.org/0009-0006-2966-3360'),('GitHub','https://github.com/miyazawa-yusuke-md'),('note','https://note.com/dr_sakura')]
+          contact='''<header class="page-heading"><p class="eyebrow">Contact &amp; Links</p><h1>連絡先・リンク</h1></header><div class="contact-layout"><section class="contact-form-section" aria-labelledby="email"><h2 id="email">お問い合わせ</h2><p>研究に関するお問い合わせは、こちらのフォームをご利用ください。</p><div class="form-notice" id="form-setup-notice" role="status"><p><strong>フォームは現在、受付準備中です。</strong></p><p>送信機能の設定が完了するまで、このフォームからは送信できません。</p><p lang="en">This form is not yet accepting messages.</p></div><form class="contact-form" id="contact-form" method="post" action="#" accept-charset="UTF-8" aria-describedby="form-privacy"><fieldset id="contact-fields" disabled><legend class="small">お問い合わせ内容 / Your inquiry</legend><div class="form-grid"><div class="form-field"><label for="name">お名前 / Name <span class="required-mark">必須</span></label><input id="name" name="name" autocomplete="name" maxlength="100" required></div><div class="form-field"><label for="organization">ご所属 / Affiliation <span class="optional-mark">任意</span></label><input id="organization" name="organization" autocomplete="organization" maxlength="200"></div><div class="form-field full"><label for="reply-email">返信先メール / Email <span class="required-mark">必須</span></label><input id="reply-email" name="email" type="email" autocomplete="email" maxlength="254" required></div><div class="form-field full"><label for="subject">件名 / Subject <span class="required-mark">必須</span></label><input id="subject" name="subject" maxlength="200" required></div><div class="form-field full"><label for="message">お問い合わせ内容 / Message <span class="required-mark">必須</span></label><textarea id="message" name="message" rows="7" maxlength="5000" required></textarea></div></div><div class="honeypot" aria-hidden="true"><label for="website">Leave empty</label><input type="text" id="website" name="_gotcha" tabindex="-1" autocomplete="off"></div><label class="consent-label"><input type="checkbox" name="consent" value="agreed" required><span>下記の取り扱いを確認しました。患者情報・機密情報は含みません。<br><span lang="en">I agree to the information handling below and will not include patient or confidential information.</span></span></label><button class="submit-button" id="contact-submit" type="submit" disabled>受付準備中 / Not available</button></fieldset></form><noscript><p class="form-help">フォームの利用にはJavaScriptが必要です。 / JavaScript is required to use this form.</p></noscript><div class="form-help" id="form-privacy"><p>入力された情報はお問い合わせへの対応に使用します。送信処理には外部サービスのFormspreeを使用し、入力内容は同サービスを経由して管理者へ通知されます。患者情報や研究上の機密情報は入力しないでください。</p><p lang="en">Your information is used to respond to your inquiry. Submissions are processed by Formspree and forwarded to the site administrator. Do not submit patient data or confidential information.</p></div></section><section aria-labelledby="address"><h2 id="address">所属・所在地</h2><div class="location-grid"><div><p>聖マリアンナ医科大学<br>病理学講座 分子病理分野</p><address>〒216-8511<br>神奈川県川崎市宮前区菅生2丁目16-1<br>聖マリアンナ医科大学 病理学講座<br>TEL：044-977-8111</address><div class="english-address" lang="en"><p>Department of Pathology,<br>St. Marianna University School of Medicine</p><p>2-16-1 Sugao, Miyamae-ku, Kawasaki-shi,<br>Kanagawa, 216-8511, Japan<br>TEL: +81-44-977-8111</p></div></div><div class="map-panel"><iframe title="聖マリアンナ医科大学の所在地 / Location of St. Marianna University School of Medicine" src="MAP_SOURCE" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe><p class="map-caption"><a href="MAP_LINK" target="_blank" rel="noopener noreferrer">Google Mapsで開く ↗</a></p></div></div></section><section aria-labelledby="links"><h2 id="links">外部リンク</h2><dl class="link-list">LINK_ROWS</dl></section></div>'''
+          contact=contact.replace('MAP_SOURCE',html.escape(map_url,quote=True)).replace('MAP_LINK',html.escape(map_link,quote=True))
+          contact=contact.replace('LINK_ROWS',''.join('<div><dt>'+label+'</dt><dd><a href="'+url+'">'+url+'</a></dd></div>' for label,url in links))
+          s=load('contact.html')
+          s=re.sub(r'(<main[^>]*>).*?(</main>)',lambda m:m[1]+contact+m[2],s,flags=re.S)
+          s=s.replace('</head>','<script src="assets/contact-config.js" defer></script>\n<script src="assets/contact-form.js" defer></script>\n</head>')
+          save('contact.html',s)
+          s=load('en.html')
+          s=re.sub(r'<p>miyazawa\.yusuke\.br\[at\]gmail\.com<br>yusuke\.miyazawa\[at\]marianna-u\.ac\.jp</p><p class="muted small">.*?</p>','<p><a href="contact.html#email">Contact form (Japanese / English) →</a></p>',s,flags=re.S)
+          s=s.replace('<section><h2>Contact</h2>','<section><h2>Selected presentations and award</h2><p><strong>2026 — JMAI AWARD: 優秀ポスター演題賞</strong><br>Japan Medical AI Society. Awarded presentation on the effect of prompt bias strength on medical AI reasoning.<br>Presentation authors: 川埜 友維 and Yusuke Miyazawa. Role: research planning and supervision.</p><ul class="topic-list"><li><a href="publications.html#pdac-mtap-2026">A case of pulmonary metastasis from pancreatic cancer with intratumoral heterogeneity of MTAP expression (2026; Japanese title and summary).</a></li><li><a href="publications.html#exam-structure-2026">Visualization of the structure of clinical questions in the Japanese National Medical Practitioners Examination through text analysis (2026; Japanese title and summary).</a></li></ul><p><a href="publications.html#awards">Award and presentation details (Japanese) →</a></p></section><section><h2>Contact</h2>')
+          s=s.replace('<p class="inline-links">','<p><a href="contact.html#address">Location and Google Maps →</a></p><p class="inline-links">')
+          save('en.html',s)
+          urls=['index.html','profile.html','research.html','research-pathology.html','research-education.html','research-medical-dx.html','research-data-science.html','publications.html','contact.html','en.html']
+          save('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join('<url><loc>https://miyazawa-yusuke-md.github.io/'+('' if p=='index.html' else p)+'</loc><lastmod>2026-10-19</lastmod></url>\n' for p in urls)+'</urlset>\n')
+          for name in ['README.md','MIGRATION_NOTES.md']:
+              s=load(name)
+              if name=='README.md':s=s.replace('2026-10-18の更新','2026-10-19の更新')
+              else:s=s.replace('## 2026-10-18','## 2026-10-19')
+              save(name,s)
+          # Retain native form spacing and pure-white backgrounds on all sizes.
+          with Path('assets/custom.css').open('a',encoding='utf-8') as f:
+              f.write('\n.form-grid{row-gap:20px}.form-field.full{margin-bottom:0}.form-grid+ .honeypot{margin:0}.contact-form legend{color:var(--muted);margin-bottom:18px}.page-nav a[aria-current="page"]{font-weight:650}.format-label{background:#fff}\n@media(max-width:640px){.form-grid{row-gap:20px}.form-field{margin-bottom:0}.timeline>div{grid-template-columns:105px minmax(0,1fr)}}\n')
+          # Remove this one-time implementation workflow from the result tree.
+          Path('.github/workflows/finish-site-update.yml').unlink()
+          # Validate all local targets and fragments without third-party dependencies.
+          from html.parser import HTMLParser
+          class Audit(HTMLParser):
+              def __init__(self):super().__init__();self.ids=set();self.links=[];self.h1=0
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if 'id' in a:
+                      assert a['id'] not in self.ids,('duplicate id',a['id'])
+                      self.ids.add(a['id'])
+                  if tag=='h1':self.h1+=1
+                  for attr in ('href','src'):
+                      if a.get(attr):self.links.append(a[attr])
+          parsed={}
+          for path in root.glob('*.html'):
+              s=path.read_text(encoding='utf-8');p=Audit();p.feed(s);parsed[path.name]=p
+              assert p.h1==1,(path,'h1 count',p.h1)
+              assert 'assets/custom.css' in s,(path,'missing custom stylesheet')
+              for bad in ['miyazawa.yusuke.br','yusuke.miyazawa[at]','mailto:','x.com/mecDrSakura','instagram.com','掲載内容は','旧サイト（Google Sites）']:
+                  assert bad not in s,(path,bad)
+          for name,p in parsed.items():
+              for link in p.links:
+                  u=urllib.parse.urlsplit(link)
+                  if u.scheme or u.netloc:continue
+                  target=urllib.parse.unquote(u.path).lstrip('/') or name
+                  if target.endswith('/'):target+='index.html'
+                  assert Path(target).is_file(),(name,'missing target',link)
+                  if u.fragment and target in parsed:assert u.fragment in parsed[target].ids,(name,'missing fragment',link)
+          pubs=load('publications.html')
+          assert pubs.count('class="publication presentation"')==10
+          assert pubs.count('class="work-summary"')==13
+          assert '2026年4月1日' in load('profile.html') and '2026.04.01' in load('index.html')
+          assert 'disabled' in load('contact.html') and 'CONTACT_FORM_ENDPOINT = ""' in load('assets/contact-config.js')
+          print('VALIDATION PASSED: 11 HTML pages, internal links and fragments; 10 presentations, 3 papers, 13 summaries; no exposed recipient address; form disabled until configured.',flush=True)
+          archive=Path(os.environ['RUNNER_TEMP'])/'research-site-v3.zip'
+          with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
+              for path in sorted(root.rglob('*')):
+                  if path.is_file() and '.git' not in path.parts:
+                      z.write(path,'research-site-v3/'+path.as_posix())
+      - name: Commit prepared files to review branch only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Prepare requested research site revisions and validate internal links'
+          git push origin HEAD:site-refresh-20261019
+          echo "PREPARED_COMMIT=$(git rev-parse HEAD)"
+          echo "PREPARED_TREE=$(git rev-parse HEAD^{tree})"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research-site-v3-review
+          path: ${{ runner.temp }}/research-site-v3.zip
+          retention-days: 3

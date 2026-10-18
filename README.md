@@ -1,45 +1,36 @@
-# 宮澤優介 研究紹介サイト
+# 宮澤優介 研究紹介ホームページ
 
 公開URL: https://miyazawa-yusuke-md.github.io/
 
-GitHub Pagesで配信する、HTMLとCSSだけの静的サイトです。Node.js、Python、Quarto、データベース、外部フォント、アクセス解析はサイトの表示・公開には不要です。JavaScriptを無効にしても全ページを閲覧できます。
+HTML/CSSとお問い合わせ用の小さなJavaScriptのみを使用します。通常の公開にビルド・Node.js・Quartoは不要です。
 
-## 内容を更新する
+## 編集するファイル
 
-各HTMLファイルの本文を編集して `main` にコミットすると、GitHub Pagesに反映されます。共通する所属・ナビゲーション・フッターの変更時は全HTMLを揃えてください。
-
-| ファイル | 内容 |
+| 内容 | ファイル |
 |---|---|
-| `index.html` | トップページ・お知らせ・研究分野の概要 |
-| `profile.html` | 経歴・教育活動・年度別講義時間 |
-| `research.html` | 4分野の研究紹介 |
-| `publications.html` | 論文・学会発表 |
-| `contact.html` | 連絡先・所在地・外部リンク |
-| `en.html` | 英語のプロフィールと論文一覧 |
-| `assets/style.css` | 共通デザイン・スマートフォン対応 |
-| `MIGRATION_NOTES.md` | 旧サイトからの移行範囲と確認事項 |
+| ホーム・お知らせ | `index.html` |
+| 経歴・教育活動 | `profile.html` |
+| 研究分野一覧 | `research.html` |
+| 病理 | `research-pathology.html` |
+| 医学教育 | `research-education.html` |
+| 医療DX・生成AI | `research-medical-dx.html` |
+| 統計・機械学習 | `research-data-science.html` |
+| 論文・学会発表・受賞 | `publications.html` |
+| お問い合わせ・地図 | `contact.html` |
+| 英語概要 | `en.html` |
+| 基本デザイン／追加配色 | `assets/style.css` / `assets/custom.css` |
+| フォーム送信先 | `assets/contact-config.js` |
 
-更新時は該当ページの更新日と `sitemap.xml` の `lastmod` も更新します。変更しないページの更新日はそのままにします。
+## お問い合わせフォーム
 
-## 公開設定
+Formspreeの受信用フォームIDで送信します。受信先メールは公開コードに記載しません。現在は未接続のため送信できません。設定方法は `CONTACT_SETUP.md` を参照してください。登録・通知先確認・実メールによるテストが必要です。
 
-`Settings → Pages → Build and deployment` で `Deploy from a branch`、`main`、`/(root)` を使用します。`.nojekyll` はHTMLをそのまま公開するためのファイルなので削除しないでください。独自ドメインや追加の認証情報は設定していません。
+## 更新・確認
 
-## ローカルで確認する
+公開元はmainブランチのルートです。編集後にコミットするとPagesで公開されます。確認事項: 全ページのリンク、スマートフォン表示、メールアドレス非掲載、研究紹介と業績の相互リンク、英語ページとsitemapの整合性。
 
-`index.html` をブラウザで開けば確認できます。ローカルサーバーを使う場合は、リポジトリのフォルダで以下を実行します（Pythonがある場合）。
+ローカル表示はファイルを直接開くか、`python3 -m http.server 8000` を利用できます。フォームはJavaScriptが必要です。地図はインターネット接続時にGoogle Mapsから読み込まれます。
 
-```bash
-python3 -m http.server 8000 --bind 127.0.0.1
-```
+2026-10-18の更新: 背景を白、アクセントを旧Google Sitesの青（#007BBF）に変更。2026年4月1日の着任に統一。研究4分野を独立ページ化。論文3件・学会発表10件に紹介概要を付記し、JMAI AWARDの受賞を追加。移行説明の注記・X・Instagram・公開ページのメールアドレスを削除。
 
-その後 `http://127.0.0.1:8000/` を開きます。
-
-## 掲載方針
-
-- 研究者の経歴・研究内容・業績を中心とし、宣伝的なキャッチコピーや未確認の成果を加えません。
-- 論文は題名・著者・掲載誌・年・DOIを記載し、準備中の発表は実施済み業績と分けます。
-- 本リポジトリもWebサイトも公開です。患者情報、未公開データ、学内資料、認証情報を追加しないでください。
-- メンバー限定ページはこのサイトの中に置かず、別のアクセス制御付きサービスを利用します。
-
-GitHub公式ドキュメント: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+発表概要は題名・本人が共有した研究内容に基づく紹介文であり、学会抄録の転載ではありません。未確認の数値結果・共著者・実施日を補っていません。
