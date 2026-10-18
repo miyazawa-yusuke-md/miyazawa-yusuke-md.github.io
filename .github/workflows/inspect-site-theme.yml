@@ -1,0 +1,26 @@
+name: Inspect original site palette
+on:
+  push:
+    paths: ['.github/workflows/inspect-site-theme.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  palette:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read public Google Sites theme colors
+        shell: python
+        run: |
+          import urllib.request, urllib.parse, re, collections
+          url='https://sites.google.com/view/md-miya/'+urllib.parse.quote('ホーム')
+          with urllib.request.urlopen(url,timeout=25) as response:
+              html=response.read(5000000).decode('utf-8','replace')
+          colors=collections.Counter(re.findall(r'(?:rgb|rgba)\([^)]{3,40}\)|#[0-9a-fA-F]{6}\b',html))
+          print('COLOR_FREQUENCY',colors.most_common(40))
+          rules=re.findall(r'[^{}]{0,100}\{[^{}]{0,1200}\}',html)
+          for rule in rules:
+              if re.search(r'(?:color|background)[^;]*?(?:rgb\((?!255, 255, 255|0, 0, 0)[^)]*\)|#[0-9a-fA-F]{6})',rule):
+                  print(rule[:650])
+          print('DONE')
