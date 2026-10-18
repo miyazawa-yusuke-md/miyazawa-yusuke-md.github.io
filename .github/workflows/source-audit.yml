@@ -33,25 +33,15 @@ jobs:
                       self.text.append(data)
                       if self.href: self.label.append(data.strip())
           prefix='https://sites.google.com/view/md-miya/'
-          queue=[prefix+urllib.parse.quote('ホーム')]; seen=set()
-          while queue and len(seen)<12:
-              url=queue.pop(0)
-              if url in seen: continue
-              seen.add(url)
+          for title in ('ホーム','自己紹介','研究紹介','研究業績'):
+              url=prefix+urllib.parse.quote(title)
               print('\n=== SOURCE PAGE: '+url+' ===',flush=True)
-              try:
-                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (compatible; personal-website-migration)'})
-                  with urllib.request.urlopen(req,timeout=25) as response:
-                      print('HTTP',response.status,'FINAL_URL',response.url,flush=True)
-                      raw=response.read(5000000).decode('utf-8','replace')
-                  page=Page(); page.feed(raw)
-                  text=''.join(page.text)
-                  text=re.sub(r'[ \t]+',' ',text)
-                  text=re.sub(r'\n\s*\n+','\n',text)
-                  print(text[:100000],flush=True)
-                  print('LINKS_JSON '+json.dumps(page.links,ensure_ascii=False),flush=True)
-                  for _,href in page.links:
-                      link=urllib.parse.urljoin(url,href).split('#')[0].split('?')[0]
-                      if link.startswith(prefix) and link not in seen and link not in queue: queue.append(link)
-              except Exception as exc:
-                  print('SOURCE_READ_FAILED',type(exc).__name__,str(exc),flush=True)
+              req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (compatible; personal-website-migration)'})
+              with urllib.request.urlopen(req,timeout=25) as response:
+                  print('HTTP',response.status,'FINAL_URL',response.url,flush=True)
+                  raw=response.read(5000000).decode('utf-8','replace')
+              page=Page(); page.feed(raw)
+              text=re.sub(r'[ \t]+',' ',''.join(page.text))
+              text=re.sub(r'\n\s*\n+','\n',text)
+              print(text[:160000],flush=True)
+              print('LINKS_JSON '+json.dumps(page.links,ensure_ascii=False),flush=True)
