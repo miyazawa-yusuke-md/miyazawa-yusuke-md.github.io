@@ -1,0 +1,43 @@
+name: Verify public Google Form
+on:
+  push:
+    paths: ['.github/workflows/verify-google-form.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect the supplied responder link without submitting a response
+        shell: python
+        run: |
+          import urllib.request, urllib.parse, re
+          from html.parser import HTMLParser
+          class Text(HTMLParser):
+              def __init__(self): super().__init__(); self.skip=0; self.parts=[]
+              def handle_starttag(self, tag, attrs):
+                  if tag in ('style','script'): self.skip+=1
+                  if tag in ('div','p','h1','h2','br'): self.parts.append('\n')
+              def handle_endtag(self, tag):
+                  if tag in ('style','script'): self.skip=max(0,self.skip-1)
+              def handle_data(self, data):
+                  if not self.skip: self.parts.append(data)
+          request=urllib.request.Request('https://forms.gle/Y7PeHk13LW1z4hx26',headers={'User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(request,timeout=30) as response:
+              final=response.url
+              print('RESPONDER_URL',final)
+          u=urllib.parse.urlsplit(final)
+          assert u.hostname=='docs.google.com' and '/forms/' in u.path and u.path.endswith('/viewform'), 'Link did not resolve to a public responder form'
+          embed=urllib.parse.urlunsplit((u.scheme,u.netloc,u.path,'embedded=true',''))
+          with urllib.request.urlopen(embed,timeout=30) as response:
+              print('EMBED_URL',embed)
+              print('EMBED_STATUS',response.status)
+              print('FINAL_EMBED_URL',response.url)
+              print('X_FRAME_OPTIONS',response.headers.get('X-Frame-Options','none'))
+              print('CSP',response.headers.get('Content-Security-Policy','none'))
+              raw=response.read(3000000).decode('utf-8','replace')
+          text=Text();text.feed(raw)
+          print('VISIBLE_FORM_TEXT\n'+re.sub(r'\n\s*\n+','\n',''.join(text.parts))[:16000])
+          print('NO_FORM_RESPONSE_SUBMITTED')
