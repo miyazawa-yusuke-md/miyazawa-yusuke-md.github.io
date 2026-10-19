@@ -1,4 +1,4 @@
-/* Original Google Sites accent: #007BBF. All page surfaces stay pure white. */
+/* Original Google Sites accent: #007BBF. Main content surfaces stay pure white; header and footer use the theme blue. */
 :root{--accent:#007bbf;--ink:#21313d;--muted:#596b76;--line:#d6e4ec;--paper:#fff;--wash:#fff;--soft:#fff;--accent-dark:#005b91}
 body,.site-header,.site-main,.profile-summary,.site-footer,summary,tfoot{background:#fff}
 a:hover{color:var(--accent-dark)}.site-header{border-top:6px solid var(--accent)}.site-name{color:var(--accent-dark)}
@@ -25,7 +25,7 @@ a:hover{color:var(--accent-dark)}.site-header{border-top:6px solid var(--accent)
 
 /* Compact reading rhythm — 2026-10-19.
    Keep text sizes legible; reduce spacing between related elements instead.
-   All page/card surfaces remain #FFFFFF. */
+   Main content and card surfaces remain #FFFFFF. */
 :root { --section-space: 30px; }
 body { line-height: 1.8; }
 p { margin-bottom: .8em; }
@@ -95,6 +95,7 @@ h3 { margin: 20px 0 10px; }
 .topic-list { margin-bottom: 18px; }
 .topic-list li, .related-list li { margin-bottom: 7px; }
 .related-list { margin-top: 0; line-height: 1.8; }
+.related-list { margin-top: 0; line-height: 1.8; }
 .timeline > div { padding: 12px 0; gap: 18px; }
 .news-list > div { padding: 11px 0; }
 .detail-block { margin: 18px 0; }
@@ -144,4 +145,55 @@ h3 { margin: 20px 0 10px; }
   .site-main { padding: 0; }
   .page-layout { display: block; }
   .award-card { box-shadow: none; }
+}
+
+/* Theme-filled site header and footer — Issue #1, 2026-10-19.
+   Preserve the compact layout and white main content area. */
+.site-header,
+.site-footer {
+  background: var(--accent);
+  color: #fff;
+}
+.site-header {
+  border-top-color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.site-footer { border-top-color: var(--accent); }
+.site-header .site-name,
+.site-header .site-name-en,
+.site-header .header-nav a,
+.site-footer .footer-name,
+.site-footer .footer-name span,
+.site-footer .footer-inner p,
+.site-footer .footer-links a,
+.site-footer .footer-bottom {
+  color: #fff;
+}
+.site-header .header-nav a[aria-current="page"] {
+  color: #fff;
+  box-shadow: inset 0 -2px #fff;
+}
+.site-header a:hover,
+.site-header a:visited,
+.site-header a:focus-visible,
+.site-footer a:hover,
+.site-footer a:visited,
+.site-footer a:focus-visible {
+  color: #fff;
+}
+.site-header a:hover,
+.site-footer a:hover {
+  text-decoration: underline;
+  text-decoration-color: #fff;
+  text-underline-offset: .3em;
+}
+.site-header a:focus-visible,
+.site-footer a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.site-header .language-link,
+.site-footer .footer-bottom {
+  border-color: rgba(255,255,255,.45);
 }
